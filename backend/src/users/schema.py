@@ -2,11 +2,7 @@ from pydantic import BaseModel,ConfigDict,Field,EmailStr
 from datetime import datetime 
 from typing import Optional
 from enum import Enum
-
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    INFLUENCER = "influencer"
-    BRAND = "brand"
+from src.users.model import UserRole
 
 class UserBase(BaseModel):
     username:str=Field(min_length=1,max_length=50)

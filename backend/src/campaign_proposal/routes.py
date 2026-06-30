@@ -3,41 +3,35 @@ from __future__ import annotations
 from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import CurrentUser
 from src.database import get_db
 from src.users.model import UserRole
-from src.brand_profile.models import BrandProfile
+from src.brand_profile import crud as brand_crud
+from src.influencer_profile import crud as influencer_crud
 from src.campaign.models import Campaign
-from src.campaign.enums import CampaignStatus
 
 from src.campaign_proposal import crud
 from src.campaign_proposal.enums import ProposalStatus
 from src.campaign_proposal.schemas import ProposalCreate, ProposalPublic
 
-# NOTE: adjust import path to your influencer profile model
-from src.influencer_profile.models import InfluencerProfile
-
 router = APIRouter(prefix="/proposals", tags=["campaign_proposals"])
 
 
-async def _get_my_brand_profile(db: AsyncSession, current_user: CurrentUser) -> BrandProfile:
+async def _get_my_brand_profile(db: AsyncSession, current_user: CurrentUser):
     if current_user.role != UserRole.BRAND:
         raise HTTPException(status_code=403, detail="Only brand users can do this")
-    result = await db.execute(select(BrandProfile).where(BrandProfile.user_id == current_user.id))
-    bp = result.scalars().first()
+    bp = await brand_crud.get_by_user_id(db, current_user.id)
     if not bp:
         raise HTTPException(status_code=400, detail="Create brand profile first")
     return bp
 
 
-async def _get_my_influencer_profile(db: AsyncSession, current_user: CurrentUser) -> InfluencerProfile:
+async def _get_my_influencer_profile(db: AsyncSession, current_user: CurrentUser):
     if current_user.role != UserRole.INFLUENCER:
         raise HTTPException(status_code=403, detail="Only influencer users can do this")
-    result = await db.execute(select(InfluencerProfile).where(InfluencerProfile.user_id == current_user.id))
-    ip = result.scalars().first()
+    ip = await influencer_crud.get_by_user_id(db, current_user.id)
     if not ip:
         raise HTTPException(status_code=400, detail="Create influencer profile first")
     return ip
@@ -54,7 +48,7 @@ async def send_proposal(
     influencer_profile = await _get_my_influencer_profile(db, current_user)
 
     campaign = await db.get(Campaign, campaign_id)
-    if not campaign or campaign.status != CampaignStatus.PUBLISHED:
+    if not campaign or campaign.status != "PUBLISHED":
         raise HTTPException(status_code=404, detail="Campaign not found")
 
     existing = await crud.get_by_campaign_and_influencer(db, campaign_id, influencer_profile.id)

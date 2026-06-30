@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import SecretStr,Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    DATABASE_URL: str = "sqlite+aiosqlite:///./nepfluence.db"
+    DATABASE_URL: str = Field(
+        default="postgresql+asyncpg://postgres:password@localhost:5432/nepfluence",
+        description="PostgreSQL connection string"
+    )
+    ENVIRONMENT: str = Field(default="development", description="dev, staging, or prod")
 
     YOUTUBE_API_KEY: str = ""
     
@@ -39,5 +43,6 @@ class Settings(BaseSettings):
     
     # Frontend URL
     FRONTEND_URL: str = "http://localhost:3000"
+    LOG_LEVEL: str = Field(default="INFO", description="DEBUG, INFO, WARNING, ERROR, CRITICAL")
 
 settings = Settings()
